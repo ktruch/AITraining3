@@ -1,7 +1,7 @@
 import streamlit as st
 from langchain import PromptTemplate
 from langchain_openai import OpenAI
-
+from langchain.llms import Replicate
 
 template = """\
 For the following text, extract the following \
@@ -37,27 +37,33 @@ Output example:
 text: {review}
 """
 
-#PromptTemplate variables definition
+# PromptTemplate variables definition
 prompt = PromptTemplate(
     input_variables=["review"],
     template=template,
 )
 
 
-#LLM and key loading function
+# LLM and key loading function
 def load_LLM(openai_api_key):
     """Logic for loading the chain you want to use should go here."""
     # Make sure your openai_api_key is set as an environment variable
-    llm = OpenAI(temperature=0, openai_api_key=openai_api_key)
+    # llm = OpenAI(temperature=0, openai_api_key=openai_api_key)
+    replicate_id = "meta/llama-2-13b-chat:f4e2de70d66816a838a89eeeb621910adffb0dd0baba3976c96980970978018d"
+    llm = Replicate(
+        model=replicate_id,
+        input={"temperature": 0.01,
+               "max_length": 500,
+               "top_p": 1}
+    )
     return llm
 
 
-#Page title and header
+# Page title and header
 st.set_page_config(page_title="Extract Key Information from Product Reviews")
 st.header("Extract Key Information from Product Reviews")
 
-
-#Intro: instructions
+# Intro: instructions
 col1, col2 = st.columns(2)
 
 with col1:
@@ -71,23 +77,27 @@ with col1:
 with col2:
     st.write("Contact with [AI Accelera](https://aiaccelera.com) to build your AI Projects")
 
-
-#Input OpenAI API Key
+# Input OpenAI API Key
 st.markdown("## Enter Your OpenAI API Key")
 
+
 def get_openai_api_key():
-    input_text = st.text_input(label="OpenAI API Key ",  placeholder="Ex: sk-2twmA8tfCb8un4...", key="openai_api_key_input", type="password")
+    input_text = st.text_input(label="OpenAI API Key ", placeholder="Ex: sk-2twmA8tfCb8un4...",
+                               key="openai_api_key_input", type="password")
     return input_text
 
-openai_api_key = get_openai_api_key()
 
+openai_api_key = get_openai_api_key()
 
 # Input
 st.markdown("## Enter the product review")
 
+
 def get_review():
-    review_text = st.text_area(label="Product Review", label_visibility='collapsed', placeholder="Your Product Review...", key="review_input")
+    review_text = st.text_area(label="Product Review", label_visibility='collapsed',
+                               placeholder="Your Product Review...", key="review_input")
     return review_text
+
 
 review_input = get_review()
 
@@ -95,15 +105,14 @@ if len(review_input.split(" ")) > 700:
     st.write("Please enter a shorter product review. The maximum length is 700 words.")
     st.stop()
 
-    
 # Output
 st.markdown("### Key Data Extracted:")
 
 if review_input:
     if not openai_api_key:
         st.warning('Please insert OpenAI API Key. \
-            Instructions [here](https://help.openai.com/en/articles/4936850-where-do-i-find-my-secret-api-key)', 
-            icon="⚠️")
+            Instructions [here](https://help.openai.com/en/articles/4936850-where-do-i-find-my-secret-api-key)',
+                   icon="⚠️")
         st.stop()
 
     llm = load_LLM(openai_api_key=openai_api_key)
